@@ -25,32 +25,44 @@ const BirthdayGreeting = () => {
   const [showFinalMessage, setShowFinalMessage] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
 
-  // Start message flow ONLY after "Ready"
+  // Auto message flow
   useEffect(() => {
     if (!isReady) return;
 
-    if (currentMessageIndex < messages.length) {
-      const timer = setTimeout(() => {
-        if (currentMessageIndex === messages.length - 1) {
-          setShowButtons(true);
-        } else {
-          setCurrentMessageIndex((prev) => prev + 1);
-        }
-      }, messages[currentMessageIndex].delay);
+    timerRef.current = setTimeout(() => {
+      if (currentMessageIndex === messages.length - 1) {
+        setShowButtons(true);
+      } else {
+        setCurrentMessageIndex((prev) => prev + 1);
+      }
+    }, messages[currentMessageIndex].delay);
 
-      return () => clearTimeout(timer);
-    }
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, [currentMessageIndex, isReady]);
 
-  // 🎵 Start music on READY click
+  // Start music + flow
   const handleReadyClick = () => {
     if (audioRef.current) {
       audioRef.current.volume = 0.15;
       audioRef.current.play().catch(() => {});
     }
     setIsReady(true);
+  };
+
+  // Manual tap to continue
+  const handleTapNext = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+
+    if (currentMessageIndex === messages.length - 1) {
+      setShowButtons(true);
+    } else {
+      setCurrentMessageIndex((prev) => prev + 1);
+    }
   };
 
   const handleFinalClick = () => {
@@ -100,7 +112,6 @@ const BirthdayGreeting = () => {
               <p className="text-3xl font-semibold text-gray-800 mb-8">
                 Are you ready?
               </p>
-
               <div className="space-x-6">
                 <button
                   onClick={handleReadyClick}
@@ -126,7 +137,8 @@ const BirthdayGreeting = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -30 }}
               transition={{ duration: 1 }}
-              className="bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-xl text-center"
+              onClick={!showButtons ? handleTapNext : undefined}
+              className="cursor-pointer bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-xl text-center"
             >
               <Sparkles className="inline-block text-yellow-400 mb-4" size={32} />
 
@@ -135,13 +147,13 @@ const BirthdayGreeting = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8 }}
-                className="text-2xl font-semibold text-gray-800 mb-6"
+                className="text-2xl font-semibold text-gray-800 mb-4"
               >
                 {messages[currentMessageIndex].text}
               </motion.p>
 
               {showButtons && (
-                <div className="space-x-4">
+                <div className="space-x-4 mt-4">
                   <button
                     onClick={handleFinalClick}
                     className="px-6 py-3 bg-pink-500 text-white rounded-full"
